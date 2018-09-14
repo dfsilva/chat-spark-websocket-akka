@@ -1,123 +1,165 @@
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>CHAT</title>
-    <meta name="description" content="">
-    <meta name="author" content="">
+<meta charset="utf-8">
+<title>CHAT</title>
+<meta name="description" content="">
+<meta name="author" content="">
 
-    <!-- Mobile Specific Metas -->
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Mobile Specific Metas -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- CSS-->
-    <link rel="stylesheet" href="css/bootstrap.css">
+<!-- CSS-->
+<link rel="stylesheet" href="css/bootstrap.css">
+<link rel="stylesheet" href="login.css">
 
-    <!-- JS -->
-    <script src="https://unpkg.com/vue"></script>
+<!-- JS -->
+<script src="https://unpkg.com/vue"></script>
 </head>
 <body>
 
-<div id="app" class="container-fluid">
-    <div class="row">
-        <div v-if="message" class="col text-center">
-            {{ message }}
-        </div>
-    </div>
+	<div id="app" class="container-fluid">
+		<div class="row">
+			<div v-if="message" class="col text-center">{{ message }}</div>
+		</div>
 
-    <div class="row">
-        <div class="col">
-            <ul class="nav nav-tabs">
-                <li class="nav-item" v-for="(value, key) in chats">
-                    <a v-bind:class="['nav-link',{active:selectedChat == key}]" href="#"
-                       @click.prevent="selectedChat = key">{{
-                        key }}</a>
-                </li>
-            </ul>
-        </div>
-    </div>
+		<!--  tela login -->
+		<form class="form-signin" v-if="!usuario.autenticado">
+			<h1 class="h3 mb-3 font-weight-normal">Por favor entre no chat</h1>
+			<label for="inputEmail" class="sr-only">Email</label> 
+			<input type="email" id="inputEmail" class="form-control"
+				placeholder="Email"  v-model="usuario.email" required autofocus>
+			<button v-on:click="login" class="btn btn-lg btn-primary btn-block" 
+			type="button">Entrar</button>
+		
+		</form>
+		<!--  fim tela login -->
+		
+		
+		<div class="row" v-if="usuario.autenticado">
+			<div class="col-3" style="background-color: red;">
+				<div class="row">
+					<div class="col text-center" style="padding: 10px;">
+						<h4>Usuários Conectados</h4>
+					</div>
+				</div>
+				
+				<div class="row">
+					<div class="col text-center" style="padding: 10px;">
+						<h4>Usuários Conectados</h4>
+					</div>
+				</div>
+				
+			</div>
+			
+			<div class="col-9" style="background-color: blue;">
+			
+			
+			</div>
+		
+		</div>
+		
 
-    <div class="row" v-if="selectedChat">
-        <div class="col">
-            <ul>
-                <li v-for="item in chats[selectedChat]">
-                    {{item.message}}
-                </li>
-            </ul>
-        </div>
-    </div>
-</div>
+		<!-- abas do chat -->
+		<div class="row" v-if="selectedChat">
+			<div class="col">
+				<ul class="nav nav-tabs">
+					<li class="nav-item" v-for="(value, key) in chats"><a
+						v-bind:class="['nav-link',{active:selectedChat == key}]" href="#"
+						@click.prevent="selectedChat = key">{{ key }}</a></li>
+				</ul>
+			</div>
+		</div>
+
+		<div class="row" v-if="selectedChat">
+			<div class="col">
+				<ul>
+					<li v-for="item in chats[selectedChat]">{{item.message}}</li>
+				</ul>
+			</div>
+		</div>
+		<!-- fim abas chat -->
+	</div>
 
 </body>
 
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 
 <script type="text/javascript">
+	var app = new Vue({
+		el : '#app',
+		data : {
+			usuario : {
+				autenticado:false,
+				email:""
+			},
+			message : '',
+			chats : {},
+			selectedChat : ''
+		},
+		 methods: {
+			    login: function () {
+			    	console.log("Entrando com o email: "+this.usuario.email)
+			    	if(!this.usuario.email){
+			    		exibirMensagen("Informe o email");
+			    	}else{
+			    		var messageStr = JSON.stringify({
+			    			acao: "login",
+			    			data: {
+			    				email: this.usuario.email
+			    			}
+			    		});
+			    		console.log(messageStr);
+			    		
+			    		connection.send(messageStr);
+			    	}
+			    }
+			  }
+	});
 
-    var app = new Vue({
-        el: '#app',
-        data: {
-            message: '',
-            chats: {
-                'Chat 1': [
-                    {
-                        message: 'teste chat 1'
-                    },
-                    {
-                        message: 'teste  chat 1 2'
-                    },
-                    {
-                        message: 'teste  chat 1 3'
-                    }],
-                'Chat 2': [
-                    {
-                        message: 'teste chat 2'
-                    },
-                    {
-                        message: 'teste chat 2 2'
-                    },
-                    {
-                        message: 'teste chat 2 3'
-                    }]
-            },
-            selectedChat: ''
-        }
-    });
+	var timetoutMessage;
+	var connection;
 
-    var timetoutMessage;
+	function exibirMensagen(mensagem) {
+		app.message = mensagem
 
-    function exibirMensagen(mensagem) {
-        app.message = mensagem
+		/*
+		if (timetoutMessage) {
+			timetoutMessage.cancel()
+		}
+		*/
 
-        if (timetoutMessage) {
-            timetoutMessage.cancel()
-        }
+		timetoutMessage = window.setTimeout(function() {
+			app.message = ''
+		}, 3000)
+	}
 
-        timetoutMessage = window.setTimeout(function () {
-            app.message = ''
-        }, 3000)
-    }
+	function conectar() {
+		console.log("vai se conecatar");
+		window.WebSocket = window.WebSocket || window.MozWebSocket;
+		connection = new WebSocket('ws://127.0.0.1:4567/message');
 
-    function conectar() {
-        console.log("vai se conecatar");
-        window.WebSocket = window.WebSocket || window.MozWebSocket;
-        var connection = new WebSocket('ws://127.0.0.1:4567/message');
+		connection.onopen = function() {
+			exibirMensagen("conexao aberta")
+		};
 
-        connection.onopen = function () {
-            exibirMensagen("conexao aberta")
-        };
+		connection.onerror = function(error) {
+			exibirMensagen("conexao fechada")
+		};
 
-        connection.onerror = function (error) {
-            exibirMensagen("conexao fechada")
-        };
+		connection.onmessage = function(message) {
+			
+			var response = JSON.parse(message.data);
+			if(response.acao === "login_response"){
+				console.log(response.data.sucesso);
+				Vue.set(app.usuario, 'autenticado', response.data.sucesso)
+			}
 
-        connection.onmessage = function (message) {
-            app.chats[app.selectedChat].push({
-                message: message.data
-            })
-        };
-    }
-
-    conectar()
-
+			/* app.chats[app.selectedChat].push({
+				message : message.data
+			}) */
+		};
+	}
+	conectar()
 </script>
 
 
