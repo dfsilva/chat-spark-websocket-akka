@@ -16,6 +16,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import akka.actor.ActorRef;
+import akka.actor.PoisonPill;
+import akka.cluster.singleton.ClusterSingletonManager;
+import akka.cluster.singleton.ClusterSingletonManagerSettings;
 import akka.cluster.singleton.ClusterSingletonProxy;
 import akka.cluster.singleton.ClusterSingletonProxySettings;import akka.remote.serialization.IntSerializer;
 import br.com.anhanguera.chat.Principal;
@@ -48,9 +51,16 @@ public class ChatWebSocketHandler {
 			Login login = new Gson().fromJson(mensagem.getData(), Login.class);
 			usuarios.put(user, login.getEmail());
 			
+			system.actorOf(
+	                ClusterSingletonManager.props(
+	                        UsuarioActor.props(),
+	                        PoisonPill.getInstance(),
+	                        ClusterSingletonManagerSettings.create(system)
+	                ),"u-"+login.getEmail());
+			
 			ActorRef usuarioActor = system.actorOf(
 					ClusterSingletonProxy.props(
-							"/user/"+login.getEmail(),
+							"/user/u-"+login.getEmail(),
 							ClusterSingletonProxySettings.create(system)));
 
 			usuarioActor.tell(new UsuarioActor.Inserir(login.getEmail()), ActorRef.noSender());

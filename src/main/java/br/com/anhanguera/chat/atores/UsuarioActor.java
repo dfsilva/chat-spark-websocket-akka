@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreOptions;
 import com.google.firebase.cloud.FirestoreClient;
 
 import akka.actor.AbstractLoggingActor;
@@ -25,7 +26,10 @@ public class UsuarioActor extends AbstractLoggingActor {
 
 	private void inserirEmail(Inserir msg) {
 		System.out.println("--------------Inserindo email -------------- " + msg.email);
-		Firestore fdb = FirestoreClient.getFirestore();
+//		Firestore fdb = FirestoreClient.getFirestore();
+		FirestoreOptions options = 
+				  FirestoreOptions.newBuilder().setTimestampsInSnapshotsEnabled(true).build();
+		Firestore fdb = options.getService();
 		Map<String, Object> dados = new HashMap<>();
 		dados.put("email", msg.email);
 		fdb.collection("usuarios").document(msg.email).set(dados);

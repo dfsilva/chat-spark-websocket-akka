@@ -34,12 +34,7 @@ public class Principal {
 		Config config = ConfigFactory.load();
 		system = ActorSystem.create("chat-server", config);
 		
-		system.actorOf(
-                ClusterSingletonManager.props(
-                        UsuarioActor.props(),
-                        PoisonPill.getInstance(),
-                        ClusterSingletonManagerSettings.create(system)
-                ),"usuarioActor");
+		
 		
 		Firebase.init();
 
