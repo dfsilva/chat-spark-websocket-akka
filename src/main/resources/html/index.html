@@ -25,16 +25,16 @@
 		<!--  tela login -->
 		<form class="form-signin" v-if="!usuario.autenticado">
 			<h1 class="h3 mb-3 font-weight-normal">Por favor entre no chat</h1>
-			<label for="inputEmail" class="sr-only">Email</label> 
-			<input type="email" id="inputEmail" class="form-control"
-				placeholder="Email"  v-model="usuario.email" required autofocus>
-			<button v-on:click="login" class="btn btn-lg btn-primary btn-block" 
-			type="button">Entrar</button>
-		
+			<label for="inputEmail" class="sr-only">Email</label> <input
+				type="email" id="inputEmail" class="form-control"
+				placeholder="Email" v-model="usuario.email" required autofocus>
+			<button v-on:click="login" class="btn btn-lg btn-primary btn-block"
+				type="button">Entrar</button>
+
 		</form>
 		<!--  fim tela login -->
-		
-		
+
+
 		<div class="row" v-if="usuario.autenticado">
 			<div class="col-3" style="background-color: red;">
 				<div class="row">
@@ -42,22 +42,16 @@
 						<h4>Usuários Conectados</h4>
 					</div>
 				</div>
-				
+
 				<div class="row">
-					<div class="col text-center" style="padding: 10px;">
-						<h4>Usuários Conectados</h4>
-					</div>
+					<div class="col text-center" style="padding: 10px;"></div>
 				</div>
-				
 			</div>
-			
-			<div class="col-9" style="background-color: blue;">
-			
-			
-			</div>
-		
+
+			<div class="col-9" style="background-color: blue;"></div>
+
 		</div>
-		
+
 
 		<!-- abas do chat -->
 		<div class="row" v-if="selectedChat">
@@ -82,86 +76,9 @@
 
 </body>
 
+
+
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-
-<script type="text/javascript">
-	var app = new Vue({
-		el : '#app',
-		data : {
-			usuario : {
-				autenticado:false,
-				email:""
-			},
-			message : '',
-			chats : {},
-			selectedChat : ''
-		},
-		 methods: {
-			    login: function () {
-			    	console.log("Entrando com o email: "+this.usuario.email)
-			    	if(!this.usuario.email){
-			    		exibirMensagen("Informe o email");
-			    	}else{
-			    		var messageStr = JSON.stringify({
-			    			acao: "login",
-			    			data: {
-			    				email: this.usuario.email
-			    			}
-			    		});
-			    		console.log(messageStr);
-			    		
-			    		connection.send(messageStr);
-			    	}
-			    }
-			  }
-	});
-
-	var timetoutMessage;
-	var connection;
-
-	function exibirMensagen(mensagem) {
-		app.message = mensagem
-
-		/*
-		if (timetoutMessage) {
-			timetoutMessage.cancel()
-		}
-		*/
-
-		timetoutMessage = window.setTimeout(function() {
-			app.message = ''
-		}, 3000)
-	}
-
-	function conectar() {
-		console.log("vai se conecatar");
-		window.WebSocket = window.WebSocket || window.MozWebSocket;
-		connection = new WebSocket('ws://127.0.0.1:4567/message');
-
-		connection.onopen = function() {
-			exibirMensagen("conexao aberta")
-		};
-
-		connection.onerror = function(error) {
-			exibirMensagen("conexao fechada")
-		};
-
-		connection.onmessage = function(message) {
-			
-			var response = JSON.parse(message.data);
-			if(response.acao === "login_response"){
-				console.log(response.data.sucesso);
-				Vue.set(app.usuario, 'autenticado', response.data.sucesso)
-			}
-
-			/* app.chats[app.selectedChat].push({
-				message : message.data
-			}) */
-		};
-	}
-	conectar()
-</script>
-
-
+<script type="text/javascript" src="app.js"></script>
 </body>
 </html>
