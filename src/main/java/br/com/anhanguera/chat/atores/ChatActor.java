@@ -22,13 +22,17 @@ import akka.cluster.ddata.Key;
 import akka.cluster.ddata.ORSet;
 import akka.cluster.ddata.ORSetKey;
 import akka.cluster.ddata.Replicator;
-import akka.http.javadsl.marshallers.jackson.Jackson;
-import br.com.anhanguera.enquete.dominio.Enquete;
 import scala.concurrent.duration.Duration;
 
 public class ChatActor extends AbstractLoggingActor {
+
+	@Override
+	public Receive createReceive() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
-	private final Cluster no = Cluster.get(context().system());
+	/*private final Cluster no = Cluster.get(context().system());
 	
 	private ActorRef responderPara;
 
@@ -106,6 +110,6 @@ public class ChatActor extends AbstractLoggingActor {
 		public ExcluirEnquete(Long enqueteId) {
 			this.enqueteId = enqueteId;
 		}
-	}
+	}*/
 
 }
