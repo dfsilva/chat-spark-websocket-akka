@@ -1,22 +1,19 @@
 package br.com.anhanguera.chat.dto;
 
-import java.util.List;
-
 public class LoginResponse {
 
 	private boolean sucesso;
 	private String mensagem;
-	private List<String> usuarios;
+
 
 	public LoginResponse() {
 
 	}
 
-	public LoginResponse(boolean sucesso, String mensagem, List<String> usuarios) {
+	public LoginResponse(boolean sucesso, String mensagem) {
 		super();
 		this.sucesso = sucesso;
 		this.mensagem = mensagem;
-		this.usuarios = usuarios;
 	}
 
 	public boolean isSucesso() {
@@ -34,13 +31,4 @@ public class LoginResponse {
 	public void setMensagem(String mensagem) {
 		this.mensagem = mensagem;
 	}
-
-	public List<String> getUsuarios() {
-		return usuarios;
-	}
-
-	public void setUsuarios(List<String> usuarios) {
-		this.usuarios = usuarios;
-	}
-
 }
