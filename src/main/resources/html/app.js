@@ -7,7 +7,8 @@ var app = new Vue({
 		},
 		message : '',
 		chats : {},
-		selectedChat : ''
+		selectedChat : '',
+		usuariosConectados: []
 	},
 	methods : {
 		exibirMensagen : function(mensagem) {
@@ -52,13 +53,14 @@ var app = new Vue({
 			};
 
 			this.connection.onmessage = function(message) {
-
 				var response = JSON.parse(message.data);
 				if (response.acao === "login_response") {
 					console.log(response.data.sucesso);
 					Vue.set(app.usuario, 'autenticado', response.data.sucesso)
+				}else if (response.acao === "novo_usuario") {
+					console.log("recebeu usuario conectado: "+response.data);
+					app.usuariosConectados.push(response.data.email);
 				}
-
 				/*
 				 * app.chats[app.selectedChat].push({ message : message.data })
 				 */

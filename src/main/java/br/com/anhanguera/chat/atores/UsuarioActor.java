@@ -5,10 +5,10 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.eclipse.jetty.websocket.api.Session;
 
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.FirestoreOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -23,8 +23,6 @@ import br.com.anhanguera.chat.dto.LoginResponse;
 import br.com.anhanguera.chat.dto.Mensagem;
 import br.com.anhanguera.chat.dto.UsuarioConectadoResponse;
 
-import org.eclipse.jetty.websocket.api.Session;
-
 public class UsuarioActor extends AbstractLoggingActor {
 
 	public static Props props() {
@@ -32,16 +30,39 @@ public class UsuarioActor extends AbstractLoggingActor {
 	}
 
 	private Session session;
+	private ActorRef mediator;
+	private String email;
+	
+	public UsuarioActor() {
+		mediator = DistributedPubSub.get(getContext().system()).mediator();
+	}
 
 	@Override
 	public Receive createReceive() {
-		return receiveBuilder().match(LoginMessage.class, this::inserirEmail)
+		return receiveBuilder()
+				.match(LoginMessage.class, this::inserirEmail)
+				.match(UsuarioConectado.class, msg -> {
+					Map<String, String> usuarioConectado = new HashMap<>();
+					usuarioConectado.put("email", msg.email);
+					enviarMensagem(this.session, usuarioConectado, "novo_usuario");
+					
+					mediator.tell(new DistributedPubSubMediator.Publish("msg_"+msg.email,
+							new UsuarioActor.OlaUsuarioConectado(this.email)), getSelf());
+					
+				})
+				.match(OlaUsuarioConectado.class, msg ->{
+					Map<String, String> usuarioConectado = new HashMap<>();
+					usuarioConectado.put("email", msg.email);
+					enviarMensagem(this.session, usuarioConectado, "novo_usuario");
+				})
 				.match(DistributedPubSubMediator.SubscribeAck.class, msg -> log().info("subscribed " + msg.subscribe()))
 				.build();
 	}
 
 	private void inserirEmail(LoginMessage msg) {
 		this.session = msg.session;
+		this.email = msg.email;
+		
 		enviarMensagem(this.session, new LoginResponse(true, "Login sucesso"), "login_response");
 		
 		Firestore fdb = FirestoreClient.getFirestore();
@@ -54,9 +75,13 @@ public class UsuarioActor extends AbstractLoggingActor {
 		
 		enviarMensagemUsuarioConectado(login);
 
-		ActorRef mediator = DistributedPubSub.get(getContext().system()).mediator();
-		mediator.tell(new DistributedPubSubMediator.Subscribe("atualizar_listagem_usuarios", getSelf()), getSelf());
+		
 		mediator.tell(new DistributedPubSubMediator.Subscribe("msg_" + msg.email, getSelf()), getSelf());
+		
+		mediator.tell(new DistributedPubSubMediator.Publish("usuario_conectado",
+				new UsuarioActor.UsuarioConectado(msg.email)), getSelf());
+		
+		mediator.tell(new DistributedPubSubMediator.Subscribe("usuario_conectado", getSelf()), getSelf());
 
 	}
 
@@ -80,6 +105,26 @@ public class UsuarioActor extends AbstractLoggingActor {
 		public LoginMessage(String email, Session session) {
 			this.email = email;
 			this.session = session;
+		}
+	}
+	
+	public static class UsuarioConectado implements Serializable{
+		private static final long serialVersionUID = 1L;
+		
+		public final String email;
+		
+		public UsuarioConectado(String email){
+			this.email = email;
+		}
+	}
+	
+	public static class OlaUsuarioConectado implements Serializable{
+		private static final long serialVersionUID = 1L;
+		
+		public final String email;
+		
+		public OlaUsuarioConectado(String email){
+			this.email = email;
 		}
 	}
 
