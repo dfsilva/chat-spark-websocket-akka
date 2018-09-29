@@ -60,6 +60,7 @@ public class UsuarioActor extends AbstractLoggingActor {
 	}
 
 	private void inserirEmail(LoginMessage msg) {
+		System.out.println("inserir emailllllllllllllllll");
 		this.session = msg.session;
 		this.email = msg.email;
 		
@@ -127,5 +128,8 @@ public class UsuarioActor extends AbstractLoggingActor {
 			this.email = email;
 		}
 	}
+
+	public static class End implements Serializable{}
+
 
 }

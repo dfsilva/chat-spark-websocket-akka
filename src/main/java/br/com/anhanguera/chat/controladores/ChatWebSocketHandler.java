@@ -2,6 +2,7 @@ package br.com.anhanguera.chat.controladores;
 
 import static br.com.anhanguera.chat.Principal.system;
 
+import akka.actor.Props;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -38,13 +39,30 @@ public class ChatWebSocketHandler {
 		Mensagem mensagem = new Gson().fromJson(message, Mensagem.class);
 		if (mensagem.getAcao().equals("login")) {
 			Login login = new Gson().fromJson(mensagem.getData(), Login.class);
-			system.actorOf(ClusterSingletonManager.props(UsuarioActor.props(), PoisonPill.getInstance(),
-					ClusterSingletonManagerSettings.create(system)), "u-" + login.getEmail());
 
-			ActorRef usuarioActor = system.actorOf(ClusterSingletonProxy.props("/user/u-" + login.getEmail(),
-					ClusterSingletonProxySettings.create(system)));
+			final ClusterSingletonManagerSettings settings =
+					ClusterSingletonManagerSettings.create(system);
 
-			usuarioActor.tell(new UsuarioActor.LoginMessage(login.getEmail(), user), ActorRef.noSender());
+//			system.actorOf(ClusterSingletonManager.props(UsuarioActor.props(), PoisonPill.getInstance(),
+//					ClusterSingletonManagerSettings.create(system)), "u-" + login.getEmail());
+
+			system.actorOf(
+					ClusterSingletonManager.props(
+							Props.create(UsuarioActor.class, () -> new UsuarioActor()),
+							new UsuarioActor.End(),
+							settings),
+					"u-" + login.getEmail());
+
+			ClusterSingletonProxySettings proxySettings =
+					ClusterSingletonProxySettings.create(system);
+
+//			ActorRef usuarioActor = system.actorOf(ClusterSingletonProxy.props("/user/u-" + login.getEmail(), proxySettings));
+
+			ActorRef proxy =
+					system.actorOf(ClusterSingletonProxy.props("/user/u-" + login.getEmail(), proxySettings),
+							"proxy-u-" + login.getEmail());
+
+			proxy.tell(new UsuarioActor.LoginMessage(login.getEmail(), user), ActorRef.noSender());
 		}
 	}
 

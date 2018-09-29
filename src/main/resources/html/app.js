@@ -42,7 +42,7 @@ var app = new Vue({
 
 		conectar : function() {
 			window.WebSocket = window.WebSocket || window.MozWebSocket;
-			this.connection = new WebSocket('ws://127.0.0.1:4567/chat');
+			this.connection = new WebSocket('ws://127.0.0.1:8080/chat');
 
 			this.connection.onopen = function() {
 				app.exibirMensagen("conexao aberta")
