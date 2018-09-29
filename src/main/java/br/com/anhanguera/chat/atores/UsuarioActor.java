@@ -46,17 +46,14 @@ public class UsuarioActor extends AbstractLoggingActor {
         return receiveBuilder()
                 .match(LoginMessage.class, this::inserirEmail)
                 .match(UsuarioConectado.class, msg -> {
-
                     if (!this.email.equals(msg.email)) {
                         Map<String, String> usuarioConectado = new HashMap<>();
                         usuarioConectado.put("email", msg.email);
                         enviarMensagem(this.session, usuarioConectado, "novo_usuario");
 
-
-                        mediator.tell(new DistributedPubSubMediator.Publish("msg_" + msg.email,
-                                new UsuarioActor.OlaUsuarioConectado(this.email)), getSelf());
+                        ActorRef usuarioActor = UsuarioActor.getActorInstance(getContext().getSystem(), msg.email);
+                        usuarioActor.tell(new UsuarioActor.OlaUsuarioConectado(this.email), getSelf());
                     }
-
                 })
                 .match(OlaUsuarioConectado.class, msg -> {
                     Map<String, String> usuarioConectado = new HashMap<>();
@@ -82,12 +79,11 @@ public class UsuarioActor extends AbstractLoggingActor {
         Login login = new Login(msg.email);
         enviarMensagemUsuarioConectado(login);
 
-        mediator.tell(new DistributedPubSubMediator.Subscribe("msg_" + msg.email, getSelf()), getSelf());
-        mediator.tell(new DistributedPubSubMediator.Subscribe("usuario_conectado", getSelf()), getSelf());
+//        mediator.tell(new DistributedPubSubMediator.Subscribe("msg_" + msg.email, getSelf()), getSelf());
 
+        mediator.tell(new DistributedPubSubMediator.Subscribe("usuario_conectado", getSelf()), getSelf());
         mediator.tell(new DistributedPubSubMediator.Publish("usuario_conectado",
                 new UsuarioActor.UsuarioConectado(msg.email)), getSelf());
-
     }
 
     private void enviarMensagem(Session sess, Object objeto, String acao) {
