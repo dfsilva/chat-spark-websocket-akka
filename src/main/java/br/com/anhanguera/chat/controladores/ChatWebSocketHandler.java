@@ -2,7 +2,9 @@ package br.com.anhanguera.chat.controladores;
 
 import static br.com.anhanguera.chat.Principal.system;
 
+import akka.actor.ActorSelection;
 import akka.actor.Props;
+import akka.util.Timeout;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -20,50 +22,34 @@ import akka.cluster.singleton.ClusterSingletonProxySettings;
 import br.com.anhanguera.chat.atores.UsuarioActor;
 import br.com.anhanguera.chat.dto.Login;
 import br.com.anhanguera.chat.dto.Mensagem;
+import org.omg.CORBA.TIMEOUT;
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.TimeUnit;
 
 @WebSocket
 public class ChatWebSocketHandler {
 
-	@OnWebSocketConnect
-	public void onConnect(Session user) throws Exception {
+    @OnWebSocketConnect
+    public void onConnect(Session user) throws Exception {
 
-	}
+    }
 
-	@OnWebSocketClose
-	public void onClose(Session user, int statusCode, String reason) {
+    @OnWebSocketClose
+    public void onClose(Session user, int statusCode, String reason) {
 
-	}
+    }
 
-	@OnWebSocketMessage
-	public void onMessage(Session user, String message) {
-		Mensagem mensagem = new Gson().fromJson(message, Mensagem.class);
-		if (mensagem.getAcao().equals("login")) {
-			Login login = new Gson().fromJson(mensagem.getData(), Login.class);
+    @OnWebSocketMessage
+    public void onMessage(Session user, String message) {
+        Mensagem mensagem = new Gson().fromJson(message, Mensagem.class);
+        if (mensagem.getAcao().equals("login")) {
+            Login login = new Gson().fromJson(mensagem.getData(), Login.class);
 
-			final ClusterSingletonManagerSettings settings =
-					ClusterSingletonManagerSettings.create(system);
-
-//			system.actorOf(ClusterSingletonManager.props(UsuarioActor.props(), PoisonPill.getInstance(),
-//					ClusterSingletonManagerSettings.create(system)), "u-" + login.getEmail());
-
-			system.actorOf(
-					ClusterSingletonManager.props(
-							Props.create(UsuarioActor.class, () -> new UsuarioActor()),
-							new UsuarioActor.End(),
-							settings),
-					"u-" + login.getEmail());
-
-			ClusterSingletonProxySettings proxySettings =
-					ClusterSingletonProxySettings.create(system);
-
-//			ActorRef usuarioActor = system.actorOf(ClusterSingletonProxy.props("/user/u-" + login.getEmail(), proxySettings));
-
-			ActorRef proxy =
-					system.actorOf(ClusterSingletonProxy.props("/user/u-" + login.getEmail(), proxySettings),
-							"proxy-u-" + login.getEmail());
-
-			proxy.tell(new UsuarioActor.LoginMessage(login.getEmail(), user), ActorRef.noSender());
-		}
-	}
+            ActorRef usuarioActor = UsuarioActor.getActorInstance(system, login.getEmail());
+            usuarioActor.tell(new UsuarioActor.LoginMessage(login.getEmail(), user), ActorRef.noSender());
+        }
+    }
 
 }
