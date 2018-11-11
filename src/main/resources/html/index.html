@@ -31,7 +31,6 @@
 					placeholder="Email" v-model="usuario.email" required autofocus>
 				<button v-on:click="login" class="btn btn-lg btn-primary btn-block"
 					type="button">Entrar</button>
-	
 			</form>
 		</template>
 		<!--  fim tela login -->
@@ -47,38 +46,60 @@
 					</div>
 	
 					<div class="row">
-						<div class="col text-center" style="padding: 10px;"></div>
+						<div class="col text-center" style="padding: 10px;">
+							<ul class="list-group">
+  								<li v-for="(value, key) in usuariosConectados"
+  								class="list-group-item">
+  									<a v-on:click="iniciarConversa(value)" href="#">{{value}}</a>
+  								</li>
+							</ul>
+						</div>
 					</div>
 				</div>
-				<div class="col-9" style="background-color: blue;"></div>
+				<div class="col-9" style="background-color: blue;">
+					<!-- abas do chat -->
+					<div class="row" v-if="selectedChat">
+						<div class="col">
+							<ul class="nav nav-tabs">
+								<li class="nav-item" v-for="(value, key) in chats"><a
+										v-bind:class="['nav-link',{active:selectedChat == key}]" href="#"
+										@click.prevent="selectedChat = key">{{ key }}</a></li>
+							</ul>
+						</div>
+					</div>
+
+					<div class="row" v-if="selectedChat">
+						<div class="col">
+
+							<div class="col-md-12"
+								 style="background-color: yellow; overflow-y: scroll; height: 200px;">
+								<div v-if="!chats[selectedChat].carregado">
+									Carregando....
+								</div>
+
+								<div v-if="chats[selectedChat].carregado && (chats[selectedChat].mensagens.length == 0)">
+									Nenhuma mensagem neste chat
+								</div>
+
+								<ul v-if="chats[selectedChat].carregado && (chats[selectedChat].mensagens.length > 0)">
+									<li v-for="item in chats[selectedChat].mensagens">{{item.message}}</li>
+								</ul>
+							</div>
+
+							<div class="input-group">
+								<textarea v-model="chats[selectedChat].texto" class="form-control" aria-label="With textarea"></textarea>
+								<div class="input-group-append">
+									<button class="btn btn-outline-secondary" type="button">Enviar</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- fim abas chat -->
+				</div>
 			</div>
 		</template>
-
-
-		<!-- abas do chat -->
-		<div class="row" v-if="selectedChat">
-			<div class="col">
-				<ul class="nav nav-tabs">
-					<li class="nav-item" v-for="(value, key) in chats"><a
-						v-bind:class="['nav-link',{active:selectedChat == key}]" href="#"
-						@click.prevent="selectedChat = key">{{ key }}</a></li>
-				</ul>
-			</div>
-		</div>
-
-		<div class="row" v-if="selectedChat">
-			<div class="col">
-				<ul>
-					<li v-for="item in chats[selectedChat]">{{item.message}}</li>
-				</ul>
-			</div>
-		</div>
-		<!-- fim abas chat -->
 	</div>
-
 </body>
-
-
 
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script type="text/javascript" src="app.js"></script>
