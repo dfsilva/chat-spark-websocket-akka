@@ -8,7 +8,7 @@ var app = new Vue({
 		message : '',
 		chats : {},
 		selectedChat : '',
-		usuariosConectados: ["fasdfasdfa","fasdfasf"],
+		usuariosConectados: [],
 		timeoutconexao: null,
         timetoutMessage: null
 	},
@@ -65,9 +65,18 @@ var app = new Vue({
 		enviarMensagem: function (chat) {
 			console.log("enviando texto: " + app.chats[chat].texto);
 
-			//codigo para enviar
+            var messageStr = JSON.stringify({
+                acao : "enviar-mensagem",
+                usuario: app.usuario.email,
+                data : {
+                    para : chat,
+                    texto: app.chats[chat].texto
+                }
+            });
 
+            console.log("enviando " + messageStr);
             app.chats[chat].texto = "";
+            this.connection.send(messageStr);
         }
 	},
 	created : function() {
@@ -92,7 +101,10 @@ function onMessage(message){
         })
         console.log('usuarios apos remocao: '+ novosUsuarios);
         Vue.set(app, 'usuariosConectados', novosUsuarios)
-    }
+    }else if(response.acao === "atualizar_mensagens"){
+        console.log('atualizando mensagens: '+ response.data.chat);
+        app.chats[response.data.chat].mensagens = response.data.mensagens;
+	}
 }
 
 function onClose(){

@@ -89,7 +89,7 @@
 							<div class="input-group">
 								<textarea v-model="chats[selectedChat].texto" class="form-control" aria-label="With textarea"></textarea>
 								<div class="input-group-append">
-									<button class="btn btn-outline-secondary" type="button">Enviar</button>
+									<button v-on:click="enviarMensagem(selectedChat)" class="btn btn-outline-secondary" type="button">Enviar</button>
 								</div>
 							</div>
 						</div>

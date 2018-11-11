@@ -6,7 +6,8 @@ public class Mensagem {
 
 	private String acao;
 	private JsonObject data;
-	
+	private String usuario;
+
 	public Mensagem(){
 		
 	}
@@ -33,4 +34,11 @@ public class Mensagem {
 		this.data = data;
 	}
 
+	public String getUsuario() {
+		return usuario;
+	}
+
+	public void setUsuario(String usuario) {
+		this.usuario = usuario;
+	}
 }
