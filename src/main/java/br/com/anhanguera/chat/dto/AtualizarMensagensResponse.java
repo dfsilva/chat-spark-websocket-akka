@@ -7,12 +7,12 @@ import java.util.List;
 public class AtualizarMensagensResponse {
 
     public String chat;
-    public List<MensagemChat> mensagems;
+    public List<MensagemChat> mensagens;
 
     public AtualizarMensagensResponse(){}
 
-    public AtualizarMensagensResponse(String chat, List<MensagemChat> mensagems) {
+    public AtualizarMensagensResponse(String chat, List<MensagemChat> mensagens) {
         this.chat = chat;
-        this.mensagems = mensagems;
+        this.mensagens = mensagens;
     }
 }

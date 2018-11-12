@@ -2,11 +2,7 @@ package br.com.anhanguera.chat.atores;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import akka.actor.*;
@@ -14,8 +10,6 @@ import akka.util.Timeout;
 import br.com.anhanguera.chat.dto.*;
 import org.eclipse.jetty.websocket.api.Session;
 
-import com.google.cloud.firestore.Firestore;
-import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
@@ -25,8 +19,6 @@ import br.com.anhanguera.chat.dominio.MensagemChat;
 import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 
-import static br.com.anhanguera.chat.Principal.system;
-
 public class UsuarioActor extends AbstractLoggingActor {
 
     public static Props props() {
@@ -34,37 +26,22 @@ public class UsuarioActor extends AbstractLoggingActor {
     }
 
     private Session session;
-    private ActorRef mediator;
     private String email;
 
     private Map<String, List<MensagemChat>> mensagens = new HashMap<>();
 
     public UsuarioActor() {
-        mediator = DistributedPubSub.get(getContext().system()).mediator();
     }
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
                 .match(LoginMessage.class, this::login)
-                .match(UsuarioConectado.class, msg -> {
-                    if (!this.email.equals(msg.email)) {
-                        Map<String, String> usuarioConectado = new HashMap<>();
-                        usuarioConectado.put("email", msg.email);
-                        enviarMensagem(usuarioConectado, "novo_usuario");
-
-                        ActorRef usuarioActor = UsuarioActor.getActorInstance(getContext().getSystem(), msg.email);
-                        usuarioActor.tell(new UsuarioActor.OlaUsuarioConectado(this.email), getSelf());
-                    }
-                }).match(UsuarioDesconectado.class, msg -> {
-                    if (!this.email.equals(msg.email)) {
-                        Map<String, String> usuarioDesconectado = new HashMap<>();
-                        usuarioDesconectado.put("email", msg.email);
-                        enviarMensagem(usuarioDesconectado, "usuario_desconectado");
-                    }
-                }).match(End.class, msg -> {
+                .match(UsuarioConectado.class, this::handlerUsuarioConectado)
+                .match(UsuarioDesconectado.class, this::handlerUsuarioDesconectado)
+                .match(End.class, msg -> {
                     //mediator.tell(new DistributedPubSubMediator.Publish("usuario_status",
-                      //      new UsuarioActor.UsuarioDesconectado(this.email)), getSelf());
+                    //      new UsuarioActor.UsuarioDesconectado(this.email)), getSelf());
                     //mediator.tell(new DistributedPubSubMediator.Unsubscribe("usuario_status", getSelf()), getSelf());
                     //getContext().stop(getSelf());
                 }).match(OlaUsuarioConectado.class, msg -> {
@@ -76,36 +53,38 @@ public class UsuarioActor extends AbstractLoggingActor {
                 })
                 .match(EncaminharMensagem.class, this::enviarMensagemChat)
                 .match(ReceberMensagem.class, this::receberMensagem)
+                .match(ObterMensagens.class, this::obterMensagens)
                 .build();
     }
 
     private void receberMensagem(ReceberMensagem msg) {
-        if (this.mensagens.containsKey(msg.remetente)) {
-            this.mensagens.get(msg.remetente)
-                    .add(new MensagemChat(msg.timestamp, msg.remetente, this.email, msg.texto));
-        } else {
-            this.mensagens.put(msg.remetente, Arrays.asList(
-                    new MensagemChat[]{new MensagemChat(msg.timestamp, msg.remetente, this.email, msg.texto)}));
+        if (!this.mensagens.containsKey(msg.remetente)) {
+            this.mensagens.put(msg.remetente, new ArrayList<>());
         }
+        this.mensagens.get(msg.remetente)
+                .add(new MensagemChat(msg.timestamp, msg.remetente, this.email, msg.texto));
 
         enviarMensagem(new AtualizarMensagensResponse(msg.remetente, this.mensagens.get(msg.remetente)), "atualizar_mensagens");
     }
 
     private void enviarMensagemChat(EncaminharMensagem msg) {
-        ActorRef destinatario = UsuarioActor.getActorInstance(system, msg.para);
+        ActorRef destinatario = UsuarioActor.getActorInstance(getContext().getSystem(), msg.para);
         if (destinatario != null) {
-            if (this.mensagens.containsKey(msg.para)) {
-                this.mensagens.get(msg.para).add(new MensagemChat(msg.timestamp, this.email, msg.para, msg.texto));
-            } else {
-                this.mensagens.put(msg.para, Arrays.asList(
-                        new MensagemChat[]{new MensagemChat(msg.timestamp, this.email, msg.para, msg.texto)}));
+            if (!this.mensagens.containsKey(msg.para)) {
+                this.mensagens.put(msg.para, new ArrayList<>());
             }
+
+            this.mensagens.get(msg.para).add(new MensagemChat(msg.timestamp, this.email, msg.para, msg.texto));
 
             ReceberMensagem envelopeMensagem = new ReceberMensagem(msg.timestamp, this.email, msg.texto);
             destinatario.tell(envelopeMensagem, getSelf());
 
             enviarMensagem(new AtualizarMensagensResponse(msg.para, this.mensagens.get(msg.para)), "atualizar_mensagens");
         }
+    }
+
+    private void obterMensagens(ObterMensagens msg) {
+        enviarMensagem(new AtualizarMensagensResponse(msg.chat, this.mensagens.get(msg.chat)), "atualizar_mensagens");
     }
 
     private void login(LoginMessage msg) {
@@ -117,6 +96,8 @@ public class UsuarioActor extends AbstractLoggingActor {
         Login login = new Login(msg.email);
 
         enviarMensagem(new UsuarioConectadoResponse(login.getEmail()), "usuario_conectado");
+
+        ActorRef mediator = DistributedPubSub.get(getContext().system()).mediator();
 
         mediator.tell(new DistributedPubSubMediator.Subscribe("usuario_status", getSelf()), getSelf());
         mediator.tell(
@@ -135,6 +116,26 @@ public class UsuarioActor extends AbstractLoggingActor {
             getSelf().tell(new UsuarioActor.End(), ActorRef.noSender());
         }
     }
+
+    private void handlerUsuarioConectado(UsuarioConectado msg) {
+        if (!this.email.equals(msg.email)) {
+            Map<String, String> usuarioConectado = new HashMap<>();
+            usuarioConectado.put("email", msg.email);
+            enviarMensagem(usuarioConectado, "novo_usuario");
+
+            ActorRef usuarioActor = UsuarioActor.getActorInstance(getContext().getSystem(), msg.email);
+            usuarioActor.tell(new UsuarioActor.OlaUsuarioConectado(this.email), getSelf());
+        }
+    }
+
+    private void handlerUsuarioDesconectado(UsuarioDesconectado msg) {
+        if (!this.email.equals(msg.email)) {
+            Map<String, String> usuarioDesconectado = new HashMap<>();
+            usuarioDesconectado.put("email", msg.email);
+            enviarMensagem(usuarioDesconectado, "usuario_desconectado");
+        }
+    }
+
 
     public static ActorRef getActorInstance(ActorSystem system, String actorId) {
         Timeout TIMEOUT = new Timeout(Duration.create(1, TimeUnit.SECONDS));
@@ -217,6 +218,14 @@ public class UsuarioActor extends AbstractLoggingActor {
             this.timestamp = timestamp;
             this.remetente = remetente;
             this.texto = texto;
+        }
+    }
+
+    public static class ObterMensagens implements Serializable {
+        public final String chat;
+
+        public ObterMensagens(String chat) {
+            this.chat = chat;
         }
     }
 

@@ -57,7 +57,6 @@
 					</div>
 				</div>
 				<div class="col-9" style="background-color: blue;">
-					<!-- abas do chat -->
 					<div class="row" v-if="selectedChat">
 						<div class="col">
 							<ul class="nav nav-tabs">
@@ -73,8 +72,9 @@
 
 							<div class="col-md-12"
 								 style="background-color: yellow; overflow-y: scroll; height: 200px;">
+
 								<div v-if="!chats[selectedChat].carregado">
-									Carregando....
+									Carregando.... {{selectedChat}} {{chats[selectedChat].carregado}}
 								</div>
 
 								<div v-if="chats[selectedChat].carregado && (chats[selectedChat].mensagens.length == 0)">
@@ -82,7 +82,7 @@
 								</div>
 
 								<ul v-if="chats[selectedChat].carregado && (chats[selectedChat].mensagens.length > 0)">
-									<li v-for="item in chats[selectedChat].mensagens">{{item.message}}</li>
+									<li v-for="item in chats[selectedChat].mensagens">{{item.timestamp}} {{item.de}} escreveu: {{item.texto}}</li>
 								</ul>
 							</div>
 

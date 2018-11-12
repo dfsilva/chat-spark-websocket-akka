@@ -4,6 +4,7 @@ import static br.com.anhanguera.chat.Principal.system;
 
 import java.util.Date;
 
+import br.com.anhanguera.chat.dto.ObterMensagens;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -43,6 +44,13 @@ public class ChatWebSocketHandler {
             ActorRef usuarioActor = UsuarioActor.getActorInstance(system, login.getEmail());
             usuarioActor.tell(new UsuarioActor.LoginMessage(login.getEmail(), user), ActorRef.noSender());
         }
+
+        if(mensagem.getAcao().equals("obter-mensagens")){
+            ObterMensagens obterMensagens = new Gson().fromJson(mensagem.getData(), ObterMensagens.class);
+            ActorRef usuarioActor = UsuarioActor.getActorInstance(system, mensagem.getUsuario());
+            usuarioActor.tell(new UsuarioActor.ObterMensagens(obterMensagens.chat), ActorRef.noSender());
+        }
+
         if (mensagem.getAcao().equals("enviar-mensagem")) {
             EnviarMensagem enviarMsg = new Gson().fromJson(mensagem.getData(), EnviarMensagem.class);
             ActorRef usuarioActor = UsuarioActor.getActorInstance(system, mensagem.getUsuario());
